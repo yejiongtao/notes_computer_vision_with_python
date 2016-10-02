@@ -1,0 +1,123 @@
+1. PIL (pip install Pillow, which is a maintained fork of PIL)
+	provides general image handling such as resizing, rotating, color converting, etc
+	usage
+		# from PIL import Image
+		pil_im = Image.open('1.jpg').convert('L')	# opens and converts into greyscale ('RGB')
+		pil_im.save('2.jpg')				# will find out the format from the given filename, and convert the image if necessary
+		im_thumbnail = pil_im.thumbnail((128, 128))	# creates a thumbnail with longest side 128 pixels
+		region = pil_im.crop((100, 100, 400, 400))	# crops a region from the image, (the upper left corner is (0, 0))
+		region = region.transpose(Image.ROTATE_180)	# transposes an image
+		pil_im.paste(region, (100, 100, 400, 400))	# puts back the region
+		resized = pil_im.resize((128, 128))
+		rotated = pil_im.rotate(45)
+	2 functions
+		def get_imlist(path):
+		    """ returns a list of filenames for all jpg images in a folder"""
+		    return [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.jpg')]
+
+		def convert_to_jpg(filelist):
+		    """ converts a list of image files into jpg format"""
+		    for infile in filelist:
+			outfile = os.path.splitext(infile)[0] + '.jpg'
+			if infile != outfile:
+			    try:
+				Image.open(infile).save(outfile)
+			    except IOError:
+				print("cannot convert", infile)
+
+2. Matplotlib
+	helps with math and graph plotting. we are using its PyLab
+	issue
+		when using this with eirtualenv on Windows, it may has some issue with tcl
+		to fix it, copy the content of tcl from the python directory into venv's lib directory
+	usage
+		basic plotting
+			# from PIL import Image
+			# from pylab import *
+			im = array(Image.open('1.jpg'))		# read the image to array
+			imshow(im)				# plot the image
+
+			x = [100, 100, 400, 400]		# attention! this list contains all the x, so the first point is (100, 200)
+			y = [200, 500, 200, 500]
+			plot(x, y, 'r*')			# plot the points with red star-markers. you can specify other marker forms
+			plot(x[:2], y[:2])			# connect the first two points
+
+			title('title')
+			show()
+		Contours and Histograms	
+			im = array(Image.open('continental.jpg').convert('L'))
+
+			figure()			# creates a new window. necessary when you need more than one figure
+			gray()				# must specify this, or it will still use RGB to parse the array
+			contour(im, origin='image')	# plot a contour, instead of the original image via imshow(im)
+			axis('equal')			# so that width/length of the image will be the same as the original one
+			axis('off')
+
+			figure()			# new figure for the histogram
+			hist(im.flatten(), 128)		# takes a one-dimensional array, and the number of total sets
+
+			show()
+		interactive annotation
+			imshow(im)
+			x = ginput(3)			# this statement finishes when three points are clicked
+			print('You clicked:', x)
+			show()				# main loop, should be at the end
+
+3. NumPy
+	used for scientific computing
+		the array object lets you do operations such as matrix multiplication, transposition, solving equaltion systems, vector multiplication and normalization
+	usage
+		array image representation
+			im = array(Image.open('1.jpg'))		# arrays are multi-dimensional, with elements of the same type
+			print(im.shape, im.dtype)		# (800, 640, 3) uint8
+			value = im[i, j, k]			# the value at coordinate i, j and color channel k
+
+			# array slicing. Attention that the following examples are for a grayscale image
+			im[x1, :] = im[x2, :]	# set the values of row x1 with values from row x2
+			im[:, y] = 100		# set all values in column y to 100
+			im[:100, :50].sum()	# the sum of the top left corner
+			im[50:100, 50:100]	# rows 50-100, columns 50-100 (100th not included)
+			im[x].mean()		# average of row x
+			im[:, -1]		# last column
+			im[-10:, :]		# the last 10 columns
+
+		graylevel transforms
+			im = array(Image.open('1.jpg').convert('L'))
+			im2 = 255 -im				# invert image
+			im3 = (100.0 / 255) * im + 100		# clamp to interval 100-200
+			im4 = 255.0 * (im/255.0)**2		# squared
+			print( int(im.min()), int(im.max()))
+
+		convert back to PIL Image
+			pil_im = Image.fromarray(im)
+			pil_im = Image.fromarray(uint8(im))	# if you did some operations resulting the change of data type
+
+		image resizing
+			# resizing using array is not easy, so you can use PIL for resizing
+			def imresize(im, sz):
+			    pil_im = Image.fromarray(uint8(im))
+			    return array(pil_im.resize(sz))
+
+		histogram equalization
+			# a good way to increase image contrast before further processing
+			# cumulative distribution function, CDF, is the cumulative probability of each value, used to calculate the histogram equalization
+			def histeq(im, nbr_bins = 256):
+			    imhist, bins = histogram(im.flatten(), nbr_bins, normed = True)	# get histogram
+			    cdf = imhist.cumsum()
+			    cdf = 255 * cdf / cdf[-1]				# normalize
+
+			    im2 = interp(im.flatten(), bins[:-1], cdf)		# use linear interpolation to find new pixel values
+			    return im2.reshape(im.shape), cdf			# reshape the array to 2-dimensional
+		
+		averaging images
+			# computing an average image from a list of images, is a simple way of reducing noise, and also used for artistic effects
+			# assuming all images have the same size
+			def compute_average(imlist):
+			    averageim = array(Image.open(imlist[0]), 'f')	# open the first image into an array of float
+			    for imname in imlist[1:]:
+				try:
+				    averageim += array(Image.open(imname))
+				except:
+				    print(imname, "skipped")
+			    averageim /= len(imlist)
+			    return array(averageim, 'uint8')			# return an array of uint8. or uint8(averageim)

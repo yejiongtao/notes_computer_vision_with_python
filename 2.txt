@@ -1,0 +1,116 @@
+1. NumPy
+	Principle Component Analysis of image
+		# PCA is useful for dimensionality reduction 
+		# The projection matrix resulting from PCA can be seen as a change of coordinates to a coordinate system where the coordinates are in descending order of importance
+		# the images need to be converted to a one-dimensional vector representation, and then be collected in a signle matrix, one row for each image
+		def pca(X):
+		    """ Principle Component Analysis 
+			input: X, matrix with training data stored as flattened arrays in rows
+			return: projection matrix (with important dimensions first), variance and mean. """
+		    num_data, dim = X.shape
+		    
+		    mean_X = X.mean(axis=0)
+		    X = X - mean_X
+		    
+		    if dim > num_data:          # PCA, compact trick used
+			M = dot(X, X.T)         # covariance matrix
+			e, EV = linalg.eigh(M)  # eigenvalues and eigenvectors
+			tmp = dot(X.T, EV).T    # this is the compact trick
+			V = tmp[::-1]           # reverse since last eigenvalues are the ones we want
+			S = sqrt(e)[::-1]       # reverse since eigenvalues are in increasing order
+			for i in range(V.shape[1]):
+			    V[:, i] /= S
+		    else:                       # PCA, SVD used
+			U,S,V = linalg.svd(X)
+			V = V[:num_data]        # only makes sense to return the first num_data
+		    
+		    return V,S,mean_X           # return the projection matrix, the variance and the mean
+		
+		# to use
+			im = array(Image.open(imlist[0]))	# open one image to get size
+			m,n = im.shape[0:2]			# get the size of the images
+			imnbr = len(imlist)			# get the number of images
+
+			# create matrix to store all flattened images
+			immatrix = array([array(Image.open(im)).flatten() for im in imlist],'f')
+			V,S,immean = pca.pca(immatrix)		# perform PCA
+
+			figure()				# show some images (mean and 7 first modes)
+			gray()
+			subplot(2,4,1)
+			imshow(immean.reshape(m,n))
+			for i in range(7):
+			    subplot(2,4,i+2)
+			    imshow(V[i].reshape(m,n))		# need to be reshaped
+			show()
+
+2. reading and saving files
+	pickle
+		# open file and save
+		with open('font_pca_modes.pkl', 'wb') as f:	# it's best to read and write binary files
+		  pickle.dump(immean,f)
+		  pickle.dump(V,f)
+		# open file and load
+		with open('font_pca_modes.pkl', 'rb') as f:	# with statement, which automatically handles opening and closing files
+		  immean = pickle.load(f)			# first in first out
+		  V = pickle.load(f)
+	NumPy's simple functions for reading and writing text files, if no complicated structures contained
+		savetxt('test.txt',x,'%i')
+		x = loadtxt('test.txt')
+
+3. SciPy
+	builds on NumPy and provides efficient routines for numerical integration, optimization, statistics, signal processing and image processing
+	blurring images
+		# from scipy.ndimage import filters
+		# for graylevel image
+			im = array(Image.open('empire.jpg').convert('L'))
+			im2 = filters.gaussian_filter(im,5)			# 5 is the standard deviation, the bigger, the blurrer
+		# for color images
+			im = array(Image.open('empire.jpg'))
+			im2 = zeros(im.shape)
+			for i in range(3):
+			  im2[:,:,i] = filters.gaussian_filter(im[:,:,i],5)	# apply to each color channel
+			im2 = uint8(im2)
+
+	image derivatives (show the intensity changes over the image)
+		# compute derivatives using Sobel or Prewitt filters
+			# from scipy.ndimage import filters
+			im = array(Image.open('empire.jpg').convert('L'))
+
+			imx = zeros(im.shape)
+			filters.sobel(im,1,imx)		# the second argument selects the x or y derivative, and the third stores the output	
+			imy = zeros(im.shape)
+			filters.sobel(im,0,imy)
+
+			magnitude = sqrt(imx**2+imy**2)	# the gradient magnitude
+
+		# using Guassian derivative filter, which is more robust to noise, and can compute derivatives at any scale
+			sigma = 5			# standard deviation, the bigger, the blurrer
+
+			imx = zeros(im.shape)
+			filters.gaussian_filter(im, (sigma,sigma), (0,1), imx)
+			imy = zeros(im.shape)
+			filters.gaussian_filter(im, (sigma,sigma), (1,0), imy)
+
+	morphology --counting objects
+		# morphology is used for measuring and analyzing basic shapes, often applied to binary images, sometimes grayscale as well
+			# from scipy.ndimage import measurements,morphology
+			im = array(Image.open('houses.png').convert('L'))
+			im = 1*(im<128)					# threshold to make sure it is binary
+
+			labels, nbr_objects = measurements.label(im)	# nbr_objects is the count of objects
+		opening
+			# there may be some small connections between some of the objects, to remove them, we use binary opening
+			im_open = morphology.binary_opening(im,ones((9,5)),iterations=2)
+				# the second argument is the structuring element
+				# ones((9,5)) means we use 9 pixels in the y direction (4 above and 4 below), and 5 in the x direction
+				# only those pixels satisfy this structuring element will be preserved
+				# the third argument determines how many times to apply the operation
+	modules for I/O
+		# scipy.io
+			data = io.loadmat('test.mat')	# load a Matlab file, returning a dictionary with keys corresponding to the variable names saved in the .mat file
+
+			data = {'x':x}
+			io.savemat('test.mat', data)	# write to .mat file
+		# scipy.misc
+			misc.imsave('test.jpg', im)	# save the array as a image file
