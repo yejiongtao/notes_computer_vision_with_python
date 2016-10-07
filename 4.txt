@@ -1,0 +1,114 @@
+1. creaing panoramas (cannot get the code work)
+	images that are taken at the same location (the camera position is the same) are homographically related
+	RANSAC, random sample consensus
+		an iterative method to fit models to data (will eliminate the interference of bad data)
+		to use
+			download ransac.py from http://www.scipy.org/Cookbook/RANSAC
+			create a class containing two methods fit() and get_error()
+				class RansacModel(object):
+				    def fit(self, data):
+					# return the model
+
+				    def get_error(self, data, H):
+					# apply model H to the data and then return an array of error
+			call ransac()
+				H,ransac_data = ransac.ransac(data,model,min_data,maxiter,match_theshold,fit_number,return_all=True)
+					# data, every row is a data set
+					# model, an RansacModel object
+					# min_data, the minimum number of data values to fit the model
+					# maxiter, the allowed maximum number of iteration
+					# match_theshold, error values under this threshold is acceptable
+					# fit_number, model with more than fit_number acceptable error values is considered a fit model
+	general idea	
+		use sift to find match points
+		use ransac to find the homography (a fitter one than using homography.Haffine_from_points() or H_from_points())
+		apply the homography using ndimage.geometric_transform()
+			compared to ndimage.affine_transform()
+				geometric_transform() is a random transform, so can have perspective
+			apply to each color channel
+
+2. camera models and augmented reality
+	pin-hole camera model
+		projecting a 3D point into a 2D point
+			# see camera.example_project_3d()
+			a[x,y,1] = P[x0,y0,z0,1]
+				a is a scalar to make the 2d coordinate homogenous
+				P is called the projection matrix, 3x4
+			P = K[R|t]
+				K, the intrinsic calibration matrix, describing the projection properties of the camera
+					it's mainly about the focal length, and the size of the image
+				R, a rotation matrix describing the orientation of the camera
+				t, a 3D translation vector describing the position of the camera center
+		factoring the camera matrix
+			use RQ-factorization to factorize P into K,R,t
+			# see camera.Camera.factor()
+		computing the camera center
+			the camera's position can be computed using R,t
+				it's independent of K
+			# see camera.Camera.center()
+
+	camera calibration
+		to determine the interal camera parameters, i.e. K
+			the standard way is to take lots of pictures of a flat checkerboard pattern
+		a simple method to calculate K
+			use a flat rectangular oject, e.g. a book
+				measure the sides of the book, dX and dY
+				place the book properly so that the book and the camera back are parallel
+				measure the distance from the camera to the book, dZ
+				take a picture and measure the book's width and height in pixels in the picture (you can use ginput), dx, dy
+				so the focal length will be 
+					fx = dx*dZ/dX, fy = dy*dZ/dY
+			create a function that calculate the K for a given image size
+				def my_calibration(sz):		# size of the image
+				  row,col = sz
+				  fx = 2555*col/2592		# 2555 is the fx calculated using an image with width 2592
+				  fy = 2586*row/1936		# 2586 is the fy calculated using an image with height 1936
+				  K = diag([fx,fy,1])
+				  K[0,2] = 0.5*col		# assumming the optical axis intersects with the image at the center of the image
+				  K[1,2] = 0.5*row
+				  return K
+
+	Pose Estimation from Planes and Markers
+		general idea
+			have two images containing the same object, but with different perspectives
+			use sift to find matches the two images, and use RANSAC to robustly estimate a homography
+			P2 = H P1
+				and if the book in image1 is parallel to the camera, and the scale doesn't matter
+				then you can create P1 as:
+					p1 = K[[1,0,0,0],[0,1,0,0],[0,0,1,-1]]
+					(the same as hstack((K, dot(K, array([[0], [0], [-1]])))))
+				so you can project the 3D object properly to image2
+		# see camera.example_pose_estimation()
+	
+	augmented reality
+		OpenGL
+			uses 4x4 matrices to represent transforms (both 3D transforms and projections)
+			but the camera-scene transformations are seperated into two matrices, GL_PROJECTION and GL_MODELVIEW
+				GL_PROJECTION
+					handles the image formation properties
+					is the equivalent of our internal calibration matrix K.
+						# see ar.set_projection_from_camera(K)
+				GL_MODELVIEW
+					handles the 3D transformation of the relation between the objects and the camera
+					corresponds roughly to the R and t part of our camera matrix
+						# see ar.set_modelview_from_camera(Rt)
+		general idea
+			use a marker in both images to calculate the projection matrx P
+			calculate GL_PROJECTION and GL_MODELVIEW from P
+				(maybe you will need to adjust the GL_MODELVIEW so the position of the object is correct)
+			use the GL_PROJECTION and GL_MODELVIEW to place the object in the scene
+			use pygame to show the scene
+		loading models
+			a script for pygame to load .obj file
+				http://www.pygame.org/wiki/OBJFileLoader
+				attention that you must replace all map() with list(map()) if using python3
+				use it like this
+					obj = objloader.OBJ(filename,swapyz=True)
+					glCallList(obj.gl_list)
+			free models
+				http://www.oyonale.com/modeles.php
+			to load
+				you must provide .mtl files for the .obj
+				in .obj
+					use mtllib to specify external .mtl files
+					use usemtl to specify which material to use

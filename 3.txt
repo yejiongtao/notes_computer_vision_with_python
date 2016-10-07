@@ -1,55 +1,118 @@
 1. advanced: image denoising using ROF (Rudin-Osher-Fatemi denoising model)
 	# ROF denoising preserves edges and image structures while blurring out the noise
-
-	def denoise(im, U_init, tolerance=0.1, tau=0.125, tv_weight=100):		# to use this, denoise(im, im), do not understand..
-	    """ An implementation of the Rudin-Osher-Fatemi (ROF) denoising model
-	    using the numerical procedure presented in eq (11) A. Chambolle (2005).
-
-	    Input: noisy input image (grayscale), initial guess for U, weight of
-	    the TV-regularizing term, steplength, tolerance for stop criterion.
-
-	    Output: denoised and detextured image, texture residual. """
-
-	    m,n = im.shape      # size of noisy image
-
-	    # initialize
-	    U = U_init
-	    Px = im             # x-component to the dual field
-	    Py = im             # y-component of the dual field
-	    error = 1
-
-	    while error > tolerance:
-		Uold = U
-
-		# gradient of primal variable
-		GradUx = roll(U, -1, axis=1)-U      # x-component of U's gradient
-		GradUy = roll(U, -1, axis=0)-U      # y-component of U's gradient
-	    
-		# update the dual varible
-		PxNew = Px + (tau/tv_weight)*GradUx
-		PyNew = Py + (tau/tv_weight)*GradUy
-		NormNew = maximum(1,sqrt(PxNew**2+PyNew**2))
-	    
-		Px = PxNew/NormNew                  # update of x-component (dual)
-		Py = PyNew/NormNew                  # update of y-component (dual)
-	    
-		# update the primal variable
-		RxPx = roll(Px,1,axis=1)            # right x-translation of x-component
-		RyPy = roll(Py,1,axis=0)            # right y-translation of y-component
-	    
-		DivP = (Px-RxPx)+(Py-RyPy)          # divergence of the dual field.
-		U = im + tv_weight*DivP             # update of the primal variable
-	    
-		# update of error
-		error = linalg.norm(U-Uold)/sqrt(n*m);
-
-	    return U,im-U                           # denoised image and texture residual
+	# see rof.denoise()
 
 2. local image descriptors
 	to find corresponding points and regions between images
-	important in creating panoramas, augmented reality, computing 3D reconstructions, etc
+		important in creating panoramas, augmented reality, computing 3D reconstructions, etc
 
-3. Harris Corner Detector
-	the general idea is to locate interest points where the surrounding neighborhood shows edges in more than one direction
+	Harris Corner Detector
+		the general idea is to locate interest points where the surrounding neighborhood shows edges in more than one direction
+		detecting corners
+			# see harris.sample_detect_corner()
 
-4. SIFT (scale-invariant feature transform)
+		finding corresponding points between images
+			we need to add a descriptor to each interest point (got via Harris Corner Detector), and then compare such descriptors
+			usually we use cross-correlation for comparison with Harris Corner Detector
+				this method is robust to image brightness changes
+				but these descriptors are not invariant to scale or rotation, and the choice of patch sizes affects the results
+			# see harris.sample_match_images()
+			it's not a modern approach
+
+	SIFT (scale-invariant feature transform)
+		one of the most successful local image descriptors
+			SIFT features are invariant to scale, rotation, and intensity and can be matched reliably across 3D viewpoint and noise
+		interest points
+			found using difference-of-Gaussian functions
+		descriptor
+			to achieve invariance to rotation
+				a reference direction is chosen based on the direction and magnitude of the image gradient around each point
+			to obtain robustness against image intensity
+				the descriptor uses image gradients intead of intensities used in cross-correlation
+		to use
+			a open source package VLFeat is often used
+				usually we download the binary executable, and then call it in the code
+				or you can also use pyvlfeat, a python wrapper of the package
+					but it may be tricky due to same dependencies
+			# see sift.py
+		
+	an example of using local descriptors for matching images with geotags
+		# see example_images_matching
+			process the images into .sift
+			compare the images, find out the count of matches between every two images
+				those with more than, say 2, matches are connected images
+			visualize connected images using pydot
+	
+3. PyDot
+	GraphViz need to be installed, and add to the system path
+	sameple
+		g = pydot.Dot(graph_type='graph')
+
+		g.add_node(pydot.Node(str(0),fontcolor='transparent'))
+		for i in range(5):
+		    g.add_node(pydot.Node(str(i+1)))
+		    g.add_edge(pydot.Edge(str(0),str(i+1)))
+		    for j in range(5):
+		        g.add_node(pydot.Node(str(j+1)+'-'+str(i+1)))
+		        g.add_edge(pydot.Edge(str(j+1)+'-'+str(i+1),str(j+1)))
+		g.write_png('graph.jpg',prog='neato')
+
+4. image to image mappings
+	homographies
+		a homography is a 2D projective transformation that maps points in one plane to another
+			used in registering images, rectifying images, texture warping, and creating panoramas
+		some concepts
+			homogenous coordinates (where scale does not matter)
+				[x,y,w] = [ax, ay, aw] = [x/w, y/w, 1]
+			affine transformation
+				preserves w=1 after the transformation
+				represents a 2D transformation including scaling, rotation, translation, and shearing !!!
+					attention! no perspective!!!
+		homography can be computed directly from correspoding points in two images
+			a full projective transformation has eight degrees of freedom
+				so 4 point correspondences are needed to compute H (a 3x3 matrix)
+			DLT, direct linear transformation algorithm
+				for computing H given four or more correspondences
+				# see homography.H_from_points()
+			an affine transformation has six degrees of freedom and therefore 3 point correspondences are needed to estimate H
+				# see homography.Haffine_from_points()
+				
+	warping images
+		transformed_im = scipy.ndimage.affine_transform(im, A, b, size)
+			A is a linear transformation, i.e. H[:2,:2]
+			b is a translation vector, i.e. (H[0,2], H(1,2))
+			size is the optional output size, by default is the same as the original image
+				H has already determined the size of the transformed image
+				the output size is just adding black pixels to the blank area, or cropping the transformed image
+			for color images, you do the transform for each color channel
+		image in image
+			# see warp.example_rectangle()
+			since homography has nothing to do with perspective, if you want to transform with more perspective
+				you can divide the image into two triangles and warp them seperately
+				because an affine transform can warp an image perfectly with three point correspondences
+			# see warp.example_triangle()
+		piecewise affine warping
+			triangulate the points into a triangle mesh and then warp each triangle with an affine transform
+			for triangulation, Delaunay triangulation is often used, which comes with Matpltlib
+				from matplotlib.tri import Triangulation
+
+				x,y =  floor(500 * array(random.random((2,100))))
+				tri = Triangulation(x,y).triangles
+
+				figure()
+				for t in tri:
+				    t_ext = [t[0], t[1], t[2], t[0]] # add first point to end
+				    plot(x[t_ext],y[t_ext],'r')
+
+				plot(x,y,'*')
+				axis('off')
+				show()
+		image registration (do not have the example code in my project)
+			the process of transferring images so that they are aligned in a common coordinate frame
+				is an important step in order to be able to do image comparisons and more sophisticated analysis
+			general idea
+				annotate some reference points in each image, such as eyes and nose for a face
+				use the first image as base, calculate the transformation from other images to the base image
+				transform other images to match the base one
+				then you can apply operations like PCA to get the mean
+		

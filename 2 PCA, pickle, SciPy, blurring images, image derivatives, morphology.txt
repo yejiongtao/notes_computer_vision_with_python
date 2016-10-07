@@ -67,7 +67,7 @@
 			im2 = filters.gaussian_filter(im,5)			# 5 is the standard deviation, the bigger, the blurrer
 		# for color images
 			im = array(Image.open('empire.jpg'))
-			im2 = zeros(im.shape)
+			im2 = zeros(im.shape)			# you cannot operate directly on the original array, so you create a new one
 			for i in range(3):
 			  im2[:,:,i] = filters.gaussian_filter(im[:,:,i],5)	# apply to each color channel
 			im2 = uint8(im2)

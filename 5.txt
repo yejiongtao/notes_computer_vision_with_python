@@ -1,0 +1,75 @@
+1. multiple view geometry
+	a field studying the relationship between cameras and features when there are correspondences between many images that are taken from varying viewpoints
+	basic concepts
+		epipolar geometry
+			x2.T F x1 = 0
+				epipolar constraint
+				x1 and x2 are the projection of the same 3D point in different cameras
+				F, fundamental matrix
+					decided by the K,R,t of the two cameras
+					usually we set the origin and coordinate axis to align with the first camera, so that
+						P1 = K1[I|0]
+						and P2 can be calculated using F and P1
+				this means that camera matrices can be recovered from F, which can be computed from point correspondences
+		computing F -the eight point algorithm
+			# see sfm.compute_fundamental(x1, x2)
+		computing epipole from F
+			# see sfm.compute_epipole(F)
+			# see basic_examples.example_compute__and_plot_epipole()
+		triangulation
+			recover the 3d position of a point using projections and camera matrices
+			# see sfm.triangulate_point(x1,x2,P1,P2)
+			# see basic_examples.example_triangulation()
+		computing camera matrix from 2d-3d correspondences
+			the reverse of triangulation
+			# see sfm.compute_P(x, X)
+			# see basic_examples.example_compute_P_from_points()
+		computing the camera matrix from F
+			the uncalibrated case --projective reconstruction
+				without knowing K,  the camera matrix can only be retrieved up to a projective transformation
+					 means that angles and distances are not respected
+				# see sfm.compute_P_from_fundamental(F)
+			the calibrated case --metrix reconstruction
+				The fundamental matrix for calibration-normalized coordinates is called the essential matrix
+				The camera matrices recovered from an essential matrix respect metric relationships but there are four possible solutions
+					Only one of them has the scene in front of both cameras
+					how to pick from them?
+						# see example_3d_reconstruction.py
+				# see sfm.compute_P_from_essential(E)
+
+	using a sample data set
+		http://www.robots.ox.ac.uk/~vgg/data/data-mview.html
+		the data set contains 2D information of each picture, 3D information, correspondences and also camera matrices
+			# see basic_examples.py
+
+	multiple view reconstruction (structure from motion, sfm)
+		general idea
+			Detect feature points and match them between the two images
+			Compute the fundamental matrix from the matches
+				use RANSAC to make it robust
+				# see sfm.F_from_ransac()
+			Compute the camera matrices from the fundamental matrix
+			Triangulate the 3D points
+		# see example_3d_reconstruction.py
+	
+	more
+		with more than 2 views, the reconstruction will be more accurate and more detailed
+		but when we incrementally add more views, the error accumulates
+			the approach to minimize this is called Bundle Adjustment
+		for those uncalibrated cameras, it's possible to compute the calibration from the image features
+			Self-calibration
+
+	stereo images
+		a special case of multi-view imaging
+			where two cameras are observing the same scene with only a horizontal displacement between the cameras
+		Stereo reconstruction (sometimes called dense depth reconstruction) 
+			is the problem of recovering a depth map (or, inversely, a disparity map) 
+				where the depth (or disparity) for each pixel in the image is estimated
+		Z = fb/(xl-xr)	# using similar triangles
+			f, focal length
+			b, the distance between the two camera centers
+			(xl-xr), the distance between the related points on the two views
+		computing disparity maps (depth map)
+			# see stereo.py
+			general idea
+				try different depths in a given range to find the best depth for each pixel
