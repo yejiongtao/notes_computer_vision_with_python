@@ -1,0 +1,64 @@
+1. hierarchical clustering (or agglomerative clustering)
+	another simple but powerful algorithem
+		group the two closest objects and create an 'average' node with the two objects as children
+			store the distance in the parent node
+				by distance, we mean Euclidean distance, Manhattan distance, or any other I think..
+		remove the two objects but add the new subtree to the set, keep finding the closest two objects, including subtrees, until a tree is established
+			when comparing two subtrees, you can use
+				the average of its two children
+				the minimum distance between objects in two subtrees (single linking)
+				the maximum distance between objects in two subtrees (complete linking)
+		to extract clusters, give a threshold distance, and then traverse the tree for those subtrees with distance smaller than the threshold
+			each subtree is a cluster
+
+	pros and cons
+		pros
+			the tree structure can be used to visualize relationships and show how clusters are related
+			the tree can be reused with different cluster threshold
+		cons
+			a threshold has to be chosen
+	# see hcluster.hcluster()
+		to build the tree
+	# see hcluster.simple_example()
+	# see img_crawler.py
+		to crawl images from flickr
+	# see hcluster.example_cluster_images()
+		we use a color histogram of each image as feature vector
+		and also draw a dendrogram to visualize the cluster tree
+
+2. spectral clustering
+	in essence, what it does is to tranform the original data into new feature vectors that can be easily clustered
+		(and in some cases using cluster algorithms that cannot be used in the first place)
+		methods like k-means and hierarchical clustering compute the mean of feature vectors
+			and this restricts the features to vectors.
+		with spetral clustering, there is no need to have feature vectors of any kind, just a notion of 'distance' or 'similarity'
+	general idea
+		given a similarity matrix for n elements
+			an nxn matrix with pair-wise similarity scores (e.g. number of match points, distance, etc)
+		construct feature vectors from the similarity matrix
+		apply clustering, such as k-means, to the constructed feature vectors
+	
+	# see spectral.example_spectral_fonts()
+		we create S using pair-wise Euclidean distances and compute a standard k-means clustering on the k eigenvectors
+	# see spectral.example_spectral_images()
+		we create S using number of matching features, and cluster using k-means
+
+3. searching images
+	how to use text mining techiques to search for images based on their visual content
+		visual similarity here can be similar color, textures, objects or scenes, basically any information contained in the images themselves
+		it's not feasible to perform a full comparison (like feature matching) between a query image and all images in the database
+			so techniques from the world of text mining are used
+	content-based image retrieval (CBIR)
+		vector space model 
+			for representing and searching text documents (also called bag-of-word, since order and location of words is ignored)
+			the text documents are represented with vectors that are histograms of the word frequencies in the text
+		visual words
+			the visual words are constructed using some clustering algorithm applied to the feature descriptors extracted from a large training set of images
+				the most common choice is k-means
+				in the case of k-means, visual words are cluster centroids
+			representing an image with a histogram of visual words is then called a bag-of-visual-words model
+			# see vocabulary.create_vocabulary()
+		indexing images
+			set up a database with the images and their visual word representations
+
+			

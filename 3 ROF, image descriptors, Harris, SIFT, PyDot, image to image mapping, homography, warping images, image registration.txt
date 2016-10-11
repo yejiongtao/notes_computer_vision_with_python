@@ -1,6 +1,6 @@
 1. advanced: image denoising using ROF (Rudin-Osher-Fatemi denoising model)
 	# ROF denoising preserves edges and image structures while blurring out the noise
-	# see rof.denoise()
+	# see imtools.denoise()
 
 2. local image descriptors
 	to find corresponding points and regions between images
@@ -13,7 +13,8 @@
 
 		finding corresponding points between images
 			we need to add a descriptor to each interest point (got via Harris Corner Detector), and then compare such descriptors
-			usually we use cross-correlation for comparison with Harris Corner Detector
+				we use the grayscale value of the surrounding patch directly as the descriptor
+			usually we use normalized cross-correlation (ncc) for comparison with Harris Corner Detector
 				this method is robust to image brightness changes
 				but these descriptors are not invariant to scale or rotation, and the choice of patch sizes affects the results
 			# see harris.sample_match_images()
@@ -68,13 +69,15 @@
 				preserves w=1 after the transformation
 				represents a 2D transformation including scaling, rotation, translation, and shearing !!!
 					attention! no perspective!!!
+					(preserves the sets of parallel lines)
 		homography can be computed directly from correspoding points in two images
-			a full projective transformation has eight degrees of freedom
+			a full projective transformation has eight degrees of freedom ([[a,b,c],[d,e,f],[g,h,1]], 8 unkown variables in total)
 				so 4 point correspondences are needed to compute H (a 3x3 matrix)
 			DLT, direct linear transformation algorithm
 				for computing H given four or more correspondences
 				# see homography.H_from_points()
 			an affine transformation has six degrees of freedom and therefore 3 point correspondences are needed to estimate H
+				([[a,b,c],[d,e,f],[0,0,1]])
 				# see homography.Haffine_from_points()
 				
 	warping images
@@ -107,7 +110,7 @@
 				plot(x,y,'*')
 				axis('off')
 				show()
-		image registration (do not have the example code in my project)
+		image registration
 			the process of transferring images so that they are aligned in a common coordinate frame
 				is an important step in order to be able to do image comparisons and more sophisticated analysis
 			general idea
@@ -115,4 +118,5 @@
 				use the first image as base, calculate the transformation from other images to the base image
 				transform other images to match the base one
 				then you can apply operations like PCA to get the mean
+			# see imregistration.py
 		

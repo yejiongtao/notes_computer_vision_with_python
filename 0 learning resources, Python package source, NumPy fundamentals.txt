@@ -1,9 +1,14 @@
-1. http://www.lfd.uci.edu/~gohlke/pythonlibs
+1. https://github.com/jbhuang0604/awesome-computer-vision
+	tons of resources!
+http://www.visiondummy.com/
+	basic concepts
+
+2. http://www.lfd.uci.edu/~gohlke/pythonlibs
 	a website with python packages
 	when pip doesn't work, download wheel files here and then 
-		pip install xxxx.wheel
+		pip install xxxx.whl
 
-2. NumPy fundamentals
+3. NumPy fundamentals
 	ndarray, n-dimensional array, has some important attributes (use [[1,2], [3,4]] as example)
 		ndarray.ndim	2
 			number of dimensions, also known as rank

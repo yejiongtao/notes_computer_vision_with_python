@@ -1,7 +1,15 @@
-1. NumPy
-	Principle Component Analysis of image
-		# PCA is useful for dimensionality reduction 
-		# The projection matrix resulting from PCA can be seen as a change of coordinates to a coordinate system where the coordinates are in descending order of importance
+1. Principle Component Analysis of image
+	about PCA
+		useful for dimensionality reduction 
+		the principal components are obtained by the eigendecomposition of the covaraince matrix of the data
+			and then project the data onto the eigenvectors
+				the projection matrix resulting from PCA can be seen as a change of coordinates to a coordinate system where the coordinates are in descending order of importance
+			the first feature is the one with most variance, and thus the most interesting one
+			by comparing the first N (e.g. 50) eigenvectors, the dimensionality of the feature space is greatly reduced
+		another way to understand PCA
+			it tries to reduce the dimensionality by finding a linear subspace of the original feature space
+				onto which we can project our data such that the projection error is minimized
+	to use
 		# the images need to be converted to a one-dimensional vector representation, and then be collected in a signle matrix, one row for each image
 		def pca(X):
 		    """ Principle Component Analysis 
@@ -26,23 +34,8 @@
 		    
 		    return V,S,mean_X           # return the projection matrix, the variance and the mean
 		
-		# to use
-			im = array(Image.open(imlist[0]))	# open one image to get size
-			m,n = im.shape[0:2]			# get the size of the images
-			imnbr = len(imlist)			# get the number of images
-
-			# create matrix to store all flattened images
-			immatrix = array([array(Image.open(im)).flatten() for im in imlist],'f')
-			V,S,immean = pca.pca(immatrix)		# perform PCA
-
-			figure()				# show some images (mean and 7 first modes)
-			gray()
-			subplot(2,4,1)
-			imshow(immean.reshape(m,n))
-			for i in range(7):
-			    subplot(2,4,i+2)
-			    imshow(V[i].reshape(m,n))		# need to be reshaped
-			show()
+		# see general_examples.example_pca()
+		# see general_examples.example_project_on_first_2_pc()
 
 2. reading and saving files
 	pickle

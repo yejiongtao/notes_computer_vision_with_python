@@ -15,7 +15,7 @@
 				H,ransac_data = ransac.ransac(data,model,min_data,maxiter,match_theshold,fit_number,return_all=True)
 					# data, every row is a data set
 					# model, an RansacModel object
-					# min_data, the minimum number of data values to fit the model
+					# min_data, the minimum number of data values to fit the model, e.g. 4 for a affine homography
 					# maxiter, the allowed maximum number of iteration
 					# match_theshold, error values under this threshold is acceptable
 					# fit_number, model with more than fit_number acceptable error values is considered a fit model
@@ -26,6 +26,7 @@
 			compared to ndimage.affine_transform()
 				geometric_transform() is a random transform, so can have perspective
 			apply to each color channel
+	# see warp.panorama()
 
 2. camera models and augmented reality
 	pin-hole camera model
@@ -71,7 +72,7 @@
 	Pose Estimation from Planes and Markers
 		general idea
 			have two images containing the same object, but with different perspectives
-			use sift to find matches the two images, and use RANSAC to robustly estimate a homography
+			use sift to find matches the two images, and use RANSAC to robustly estimate a homography H
 			P2 = H P1
 				and if the book in image1 is parallel to the camera, and the scale doesn't matter
 				then you can create P1 as:
@@ -93,8 +94,8 @@
 					corresponds roughly to the R and t part of our camera matrix
 						# see ar.set_modelview_from_camera(Rt)
 		general idea
-			use a marker in both images to calculate the projection matrx P
-			calculate GL_PROJECTION and GL_MODELVIEW from P
+			use a marker in both images to calculate the projection matrx P2, using the pose estimation above
+			calculate GL_PROJECTION and GL_MODELVIEW from P2
 				(maybe you will need to adjust the GL_MODELVIEW so the position of the object is correct)
 			use the GL_PROJECTION and GL_MODELVIEW to place the object in the scene
 			use pygame to show the scene
@@ -112,3 +113,4 @@
 				in .obj
 					use mtllib to specify external .mtl files
 					use usemtl to specify which material to use
+		# see ar.py

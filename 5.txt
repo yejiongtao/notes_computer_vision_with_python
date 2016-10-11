@@ -15,7 +15,7 @@
 			# see sfm.compute_fundamental(x1, x2)
 		computing epipole from F
 			# see sfm.compute_epipole(F)
-			# see basic_examples.example_compute__and_plot_epipole()
+			# see basic_examples.example_compute_and_plot_epipole()
 		triangulation
 			recover the 3d position of a point using projections and camera matrices
 			# see sfm.triangulate_point(x1,x2,P1,P2)
@@ -26,7 +26,7 @@
 			# see basic_examples.example_compute_P_from_points()
 		computing the camera matrix from F
 			the uncalibrated case --projective reconstruction
-				without knowing K,  the camera matrix can only be retrieved up to a projective transformation
+				without knowing K, the camera matrix can only be retrieved up to a projective transformation
 					 means that angles and distances are not respected
 				# see sfm.compute_P_from_fundamental(F)
 			the calibrated case --metrix reconstruction
@@ -48,7 +48,7 @@
 			Compute the fundamental matrix from the matches
 				use RANSAC to make it robust
 				# see sfm.F_from_ransac()
-			Compute the camera matrices from the fundamental matrix
+			Compute the camera matrices from the fundamental matrix (known K)
 			Triangulate the 3D points
 		# see example_3d_reconstruction.py
 	
@@ -73,3 +73,36 @@
 			# see stereo.py
 			general idea
 				try different depths in a given range to find the best depth for each pixel
+
+2. clustering images --to find groups of similar images
+	K-means clustering
+		a simple clustering algorithm trying to put the input data into k clusters
+			a. initialize k centroids randomly or with some guess
+			b. assign each data point to the class of the nearest controid
+			c. update the centroids as the average of all data points assigned to that class
+			d. repeat b and c until convergence (stable)
+		tries to minimize the total within-class variance
+			does not guarantee the best solution is found
+		to avoid the effects of choosing bad initial centroids
+			it's often run several times with different initial centroids and then choose the one with minimum variance
+			(the SciPy implementation does this for us)
+		the main drawback is the number of clusters needs to be decided beforehand
+			a inapporpriate choice leads to poor results
+
+		SciPy implementation
+			# from scipy.cluster.vq import *
+			centroids,variance = kmeans(features,2)		# features is the data set, one row for each data point
+									# 2 is K
+			code,distance = vq(features,centroids)		# code is an array indicating which cluster each data point is in
+			for k in range(2):
+				ind = where(code==k)[0]			# get the index of data points which are inside cluster k
+
+		# see k_means.example_K_means_fonts()
+			we use the projection coefficients after projecting the image data on the 20 first pricipal components obtained via pca
+				as descriptor vector for each image
+				(an array of 20 values for one image then)
+			try with different number of principal components and different number of clusters
+		# see k_means.example_K_means_pixel()
+			we just naively apply k-means on the pixel values
+				not really meaningful, just a basic example
+
