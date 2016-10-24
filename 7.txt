@@ -1,4 +1,31 @@
-1.
+1. Classifying Image Content
+	classification vs clustering
+		classification
+			you have a set of predefined classes and want to know which classes a new object belongs to
+		clustering
+			tries to group a set of objects and find whether there's some relationship between the objects
+	
+	K-nearest Neighbors (KNN)
+		one of the implest and most used classifiers
+		general idea
+			simply compares an object to be classified with all objects in a training set with known class labels
+				then let the classes vote for it
+			pros
+				there's no restrictions on what distance measure to use
+			cons
+				the number k needs to be chosen and will affect performance
+				requires the entire training set to be stored, and it will be slow to search if the set is large
+		classify simple 2D points
+			classify some 2D points into two classes and show the result
+			# see knn.example_classify_2d()
+		classify images
+			use dense SIFT as feature vectors
+				(when introducing clustering, we saw feature vectors with average RGB and PCA coefficients)
+				a dease SIFT representation is created by applying the descriptor part of SIFT to a regular grid across the whole image
+			make sure to resize the images to a fixed size when processing into dense SIFTs
+				otherwise your images will have varying number of descriptors, and therefore varying length of the feature vectors
+			# see knn.example_classify_images()
 
-
-
+	Bayes Classifier
+		
+	

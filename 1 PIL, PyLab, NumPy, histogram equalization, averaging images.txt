@@ -79,7 +79,7 @@
 			im[50:100, 50:100]	# rows 50-100, columns 50-100 (100th not included)
 			im[x].mean()		# average of row x
 			im[:, -1]		# last column
-			im[-10:, :]		# the last 10 columns
+			im[-10:, :]		# the last 10 rows
 
 		graylevel transforms
 			im = array(Image.open('1.jpg').convert('L'))

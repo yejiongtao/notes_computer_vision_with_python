@@ -48,6 +48,7 @@
 		visual similarity here can be similar color, textures, objects or scenes, basically any information contained in the images themselves
 		it's not feasible to perform a full comparison (like feature matching) between a query image and all images in the database
 			so techniques from the world of text mining are used
+
 	content-based image retrieval (CBIR)
 		vector space model 
 			for representing and searching text documents (also called bag-of-word, since order and location of words is ignored)
@@ -57,8 +58,36 @@
 				the most common choice is k-means
 				in the case of k-means, visual words are cluster centroids
 			representing an image with a histogram of visual words is then called a bag-of-visual-words model
+				here, we use feature descriptors as words, but feel free to use others to find similar colors, etc
 			# see vocabulary.create_vocabulary()
+				the dataset it from http://www.vis.uky.edu/~stewe/ukbench/
 		indexing images
 			set up a database with the images and their visual word representations
+				# see imagesearch.index_images()
+			we use pickle for encoding and decoding arrays to and from strings
+				because SQL databases do not have a standard type for storing objects or arrays
+				so we store the strings
+		searching the database for images
+			general idea
+				takes in an image, retrieves its word histogram
+				get a set of candidates based on the word histogram via matching the words
+				compare the candidates' histogram with the original one to sort the matched images
+					here we use standard Euclidean distance to compare
+			# see imagesearch.exmaple_search_image()
+		benchmarking
+			compute the average number of correct imgaes on the top four results of queries, to see how good the search results are
+				a bigger number indicates a better result
+				in our case, a score close to 3 is pretty good
+			# see imagesearch.comput_ukbench_score()
+		ranking results using geometry
+			a drawback of this bag-of-visual-words model is that the visual word representation of an image does not contain the poistions of the image features
+				based on this, we can improve the results by re-ranking the top results via taking the features' geometric relationships into account
+				the most common approach is
+					fit homographies between feature locations in the query image and the top result images
+					count the inliers after computing the homography using Ransac
+				# see imagesearch.example_search_with_geometric_result_ranking()
+		building demos and web applications
+			CherryPy
+			# see searchdemo.py
 
 			
